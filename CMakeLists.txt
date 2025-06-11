@@ -44,6 +44,9 @@ target_include_directories(embarcatech-freertos-tarefa-1 PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/include
 )
 
+pico_enable_stdio_uart(embarcatech-freertos-tarefa-1 0)
+pico_enable_stdio_usb(embarcatech-freertos-tarefa-1 1)
+
 target_link_libraries(embarcatech-freertos-tarefa-1 
     pico_stdlib 
     FreeRTOS-Kernel-Heap4 
