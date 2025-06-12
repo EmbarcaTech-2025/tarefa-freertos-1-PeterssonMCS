@@ -31,15 +31,15 @@ void Task_LED()
         {
             gpio_put(PIN_LED_BLUE, 0);
             gpio_put(PIN_LED_RED, 1);
-            vTaskDelay(1000);
+            vTaskDelay(pdMS_TO_TICKS(500));
             
             gpio_put(PIN_LED_RED, 0);
             gpio_put(PIN_LED_GREEN, 1);
-            vTaskDelay(1000);
+            vTaskDelay(pdMS_TO_TICKS(500));
             
             gpio_put(PIN_LED_GREEN, 0);
             gpio_put(PIN_LED_BLUE, 1);
-            vTaskDelay(1000);
+            vTaskDelay(pdMS_TO_TICKS(500));
         }
         vTaskDelay(10);
     }
@@ -60,10 +60,14 @@ void Task_BUZZER()
 
     while (1) 
     {
-        if (gFlagBUZZER) 
+        if(gFlagBUZZER) 
         {
             pwm_set_enabled(pwm_slice, true);
-        } else {
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            gFlagBUZZER = 0;
+        } 
+        else 
+        {
             pwm_set_enabled(pwm_slice, false);
         }
         vTaskDelay(10);
@@ -100,7 +104,7 @@ void Task_BUTTONS()
         lastA = currentA;
         lastB = currentB;
 
-        vTaskDelay(200);
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
