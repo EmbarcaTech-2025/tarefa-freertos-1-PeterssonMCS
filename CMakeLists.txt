@@ -50,7 +50,7 @@ pico_enable_stdio_usb(embarcatech-freertos-tarefa-1 1)
 target_link_libraries(embarcatech-freertos-tarefa-1 
     pico_stdlib 
     FreeRTOS-Kernel-Heap4 
-    hardware_i2c
+    hardware_pwm
     )
 
 pico_add_extra_outputs(embarcatech-freertos-tarefa-1)

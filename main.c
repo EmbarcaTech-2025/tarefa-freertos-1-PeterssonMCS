@@ -2,7 +2,7 @@
 #include "task.h"
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "hardware/i2c.h"
+#include "hardware/pwm.h"
 
 #define PIN_LED_RED 13
 #define PIN_LED_GREEN 11
@@ -18,82 +18,101 @@ bool gFlagBUZZER = false;
 
 void Task_LED() 
 {
-  gpio_init(PIN_LED_RED);
-  gpio_set_dir(PIN_LED_RED, GPIO_OUT);
-  gpio_init(PIN_LED_GREEN);
-  gpio_set_dir(PIN_LED_GREEN, GPIO_OUT);
-  gpio_init(PIN_LED_BLUE);
-  gpio_set_dir(PIN_LED_BLUE, GPIO_OUT);
+    gpio_init(PIN_LED_RED);
+    gpio_set_dir(PIN_LED_RED, GPIO_OUT);
+    gpio_init(PIN_LED_GREEN);
+    gpio_set_dir(PIN_LED_GREEN, GPIO_OUT);
+    gpio_init(PIN_LED_BLUE);
+    gpio_set_dir(PIN_LED_BLUE, GPIO_OUT);
 
-  while (true) 
-  {
-    if( gFlagLED )
+    while (1) 
     {
-      gpio_put(PIN_LED_BLUE, 0);
-      gpio_put(PIN_LED_RED, 1);
-      vTaskDelay(1000);
-      gpio_put(PIN_LED_RED, 0);
-      gpio_put(PIN_LED_GREEN, 1);
-      vTaskDelay(1000);
-      gpio_put(PIN_LED_BLUE, 1);
-      gpio_put(PIN_LED_GREEN, 0);
+        if(gFlagLED)
+        {
+            gpio_put(PIN_LED_BLUE, 0);
+            gpio_put(PIN_LED_RED, 1);
+            vTaskDelay(1000);
+            
+            gpio_put(PIN_LED_RED, 0);
+            gpio_put(PIN_LED_GREEN, 1);
+            vTaskDelay(1000);
+            
+            gpio_put(PIN_LED_GREEN, 0);
+            gpio_put(PIN_LED_BLUE, 1);
+            vTaskDelay(1000);
+        }
+        vTaskDelay(10);
     }
-    vTaskDelay(1000);
-  }
 }
 
 void Task_BUZZER() 
 {
-  gpio_init(PIN_BUZZER);
-  gpio_set_dir(PIN_BUZZER, GPIO_OUT);
+    const uint divider = 125;
+    const uint period = 1000;
+    const uint duty = 500;
 
-  while (true) 
-  {
-    if( gFlagBUZZER )
+    gpio_set_function(PIN_BUZZER, GPIO_FUNC_PWM);
+    uint pwm_slice = pwm_gpio_to_slice_num(PIN_BUZZER);
+    pwm_set_clkdiv(pwm_slice, divider);
+    pwm_set_wrap(pwm_slice, period - 1);
+    pwm_set_gpio_level(PIN_BUZZER, duty);
+    pwm_set_enabled(pwm_slice, false);
+
+    while (1) 
     {
-      for( int i = 0; i < 100 ; i++ )
-      {
-        gpio_put(PIN_BUZZER, 0);
-        vTaskDelay(1);
-        gpio_put(PIN_BUZZER, 1);
-      }
+        if (gFlagBUZZER) 
+        {
+            pwm_set_enabled(pwm_slice, true);
+        } else {
+            pwm_set_enabled(pwm_slice, false);
+        }
+        vTaskDelay(10);
     }
-    vTaskDelay(10000);
-  }
 }
 
-void Task_BUTTONS() 
+void Task_BUTTONS()
 {
-  gpio_init(PIN_BUTTON_A);
-  gpio_set_dir(PIN_BUTTON_A, GPIO_IN);
-  gpio_pull_up(PIN_BUTTON_A);
+    gpio_init(PIN_BUTTON_A);
+    gpio_set_dir(PIN_BUTTON_A, GPIO_IN);
+    gpio_pull_up(PIN_BUTTON_A);
 
-  gpio_init(PIN_BUTTON_B);
-  gpio_set_dir(PIN_BUTTON_B, GPIO_IN);
-  gpio_pull_up(PIN_BUTTON_B);
+    gpio_init(PIN_BUTTON_B);
+    gpio_set_dir(PIN_BUTTON_B, GPIO_IN);
+    gpio_pull_up(PIN_BUTTON_B);
 
-  while (true) 
-  {
-    if( !gpio_get( PIN_BUTTON_A ))
+    bool lastA = true, lastB = true;
+
+    while (1) 
     {
-      gFlagLED = !gFlagLED;
-    }else if ( !gpio_get( PIN_BUTTON_B ))
-    {
-      gFlagBUZZER = !gFlagBUZZER;
+        bool currentA = gpio_get(PIN_BUTTON_A);
+        bool currentB = gpio_get(PIN_BUTTON_B);
+
+        if (!currentA && lastA) 
+        {
+            gFlagLED = !gFlagLED;
+        }
+
+        if (!currentB && lastB) 
+        {
+            gFlagBUZZER = !gFlagBUZZER;
+        }
+
+        lastA = currentA;
+        lastB = currentB;
+
+        vTaskDelay(200);
     }
-    vTaskDelay(200);
-  }
 }
 
 int main() 
 {
-  stdio_init_all();
+    stdio_init_all();
 
-  xTaskCreate( Task_LED , "Task_LED", 256, NULL, 1, NULL);
-  xTaskCreate( Task_BUZZER , "Task_BUZZER", 256, NULL, 1, NULL);
-  xTaskCreate( Task_BUTTONS , "Task_BUTTONS", 256, NULL, 1, NULL);
+    xTaskCreate(Task_LED, "LED", 256, NULL, 1, NULL);
+    xTaskCreate(Task_BUZZER, "BUZZER", 256, NULL, 1, NULL);
+    xTaskCreate(Task_BUTTONS, "BUTTONS", 256, NULL, 1, NULL);
 
-  vTaskStartScheduler();
+    vTaskStartScheduler();
 
-  while(1){};
+    while (1) {};
 }
